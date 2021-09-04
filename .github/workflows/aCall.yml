@@ -1,0 +1,23 @@
+; Make the memory free for all. Yay!
+    $aCall = DllCall($hKernel32, "int", "VirtualProtect", "ptr", $pEntry, "long", $szPtr, "dword", $PAGE_READWRITE, "dword*", 0)
+
+    If @error Or Not $aCall[0] Then
+        ConsoleWriteError("Error: Failed To hook vTable" & @CRLF)
+        Return False
+    EndIf
+    $flOldProtect = $aCall[4]
+
+    $tEntry = DllStructCreate("ptr", $pEntry)
+    $pOldRet = DllStructGetData($tEntry, 1)
+    If $pOldRet <> $pHook Then
+        DllStructSetData($tEntry, 1, $pHook)
+        $bStatus = True
+    Else ;Already Hooked
+        ConsoleWriteError("Error: vTable is already hooked" & @CRLF)
+        $bStatus = False
+    EndIf
+
+    ;put the memory protect back how we found it
+    DllCall($hKernel32, "int", "VirtualProtect", "ptr", $pEntry, "long", $szPtr, "dword", $flOldProtect, "dword*", 0)
+    Return $bStatus
+EndFunc   ;==>__HookVTableEntry
